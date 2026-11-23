@@ -1,0 +1,33 @@
+name: Verify formula
+
+# Runs the copy of this workflow and of the check that is on main, never
+# the pull request's own, so a pull request cannot rewrite its own judge.
+# It holds a read-only token, uses no secrets and no outside actions, and
+# reads the pull request as text without running any of it.
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify formula
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check that this is a plain version bump with matching checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          gh api -H 'Accept: application/vnd.github.raw' "repos/$REPO/contents/.github/verify_formula.py?ref=main" > "$RUNNER_TEMP/verify_formula.py"
+          python3 -I "$RUNNER_TEMP/verify_formula.py"
