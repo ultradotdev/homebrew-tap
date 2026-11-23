@@ -28,6 +28,7 @@ class Gantry < Formula
 
   def install
     bin.install "gantry"
+    ohai "test"
     doc.install "NOTICE", "README.md"
   end
 
